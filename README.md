@@ -1,4 +1,4 @@
-# AutoHotKey-Scripts-More
+# AutoHotKey Scripts and More
 Misc. AutoHotKey Functions
 
 ## Master Tray Icon.ahk
