@@ -1,11 +1,35 @@
-﻿#Requires AutoHotKey v1.0
- 
 #Persistent
 #SingleInstance Force
 DetectHiddenWindows, On
 SelfID := WinExist(A_ScriptFullPath " ahk_class AutoHotkey")
 Menu, Tray, NoStandard ; Disable standard menu
 WinGet, AList, List, ahk_class AutoHotkey ; Get a list of all AutoHotkey scripts
+
+; Define WindowSpy location
+WindowSpyPath := "C:\Program Files\AutoHotkey\WindowSpy.ahk"
+
+; Define a log file path for debugging
+LogFilePath := "C:\AHK\2nd-keyboard\Corsair\Other Scripts\DebugLog.txt"
+
+
+; Initialize log file
+InitializeLog:
+FileAppend, % "Script started: " . A_Now . "`n", %LogFilePath%
+if ErrorLevel
+{
+    MsgBox Error creating log file
+    ExitApp
+}
+
+; Function to log messages and errors
+LogMessage(Message, IsError := false) {
+    FileAppend, %Message%`n, %LogFilePath%
+    if (IsError) {
+        FileAppend, Error:`n, %LogFilePath%
+        FileAppend, %A_LastError%`n, %LogFilePath%
+    }
+}
+
 
 ; Create a variable to track the number of .ahk scripts running
 NumAHKScripts := 0
@@ -34,6 +58,7 @@ Loop %AList%
 
 Menu, Tray, Add ; Insert a blank line in menus for a break
 Menu, Tray, Add, Quick Reload, Reload
+Menu, Tray, Add, Reload All AHK Scripts, ReloadAllAHKScripts ; Add a new menu item
 Menu, Tray, Add, Close All AHK Scripts, CloseAllAHKScripts ; Add a new menu item
 Menu, Tray, Add, Run WindowSpy, RunWindowSpy ; Add the "Run WindowSpy" menu item
 Menu, Tray, Default, Quick Reload ; Set it so "Reload" is the default if clicking
@@ -58,6 +83,9 @@ Loop %NewAList%
     if (InStr(Name, ".ahk"))
         NewNumAHKScripts++
 }
+
+; Log the number of .ahk scripts
+LogMessage("Number of .ahk scripts running: " NewNumAHKScripts)
 
 ; Check if the number of .ahk scripts has increased
 if (NewNumAHKScripts > NumAHKScripts)
@@ -107,17 +135,29 @@ Loop %AList%
     }
 }
 
+ReloadAllAHKScripts:
+Loop %AList%
+{
+    ID := AList%A_Index%
+    if (ID = SelfID)
+        Continue
+    PostMessage, 0x111, 65400, 0, , % "ahk_id " ID ; Send the Reload command
+}
+Reload ; Reload the master script as well
+Return
+
+
 ; Force the master script to reload
 Reload
 Return
 
 Reload:
+LogMessage("Reload command received")
 Reload
 Return
 
 RunWindowSpy:
 ; Add your code to run WindowSpy here
-Run, "C:\Program Files\AutoHotkey\WindowSpy.ahk" ; Modify this line to match the actual path to WindowSpy
+LogMessage("RunWindowSpy command received")
+Run, %WindowSpyPath% ; Run WindowSpy using A_AhkPath
 Return
-
-esc::exitapp
